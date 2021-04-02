@@ -22,14 +22,14 @@ using namespace bftEngine;
 // maxReplyMsgSize_ = sizeof(Header) + sizeof(signature) + cid.size(), i.e 58 + 256 + up to 710 bytes of cid
 uint16_t PreProcessReplyMsg::maxReplyMsgSize_ = 1024;
 
-PreProcessReplyMsg::PreProcessReplyMsg(SigManagerSharedPtr sigManager,
-                                       preprocessor::PreProcessorRecorder* histograms,
+PreProcessReplyMsg::PreProcessReplyMsg(preprocessor::PreProcessorRecorder* histograms,
                                        NodeIdType senderId,
                                        uint16_t clientId,
                                        uint16_t reqOffsetInBatch,
                                        uint64_t reqSeqNum,
                                        uint64_t reqRetryId)
-    : MessageBase(senderId, MsgCode::PreProcessReply, 0, maxReplyMsgSize_), sigManager_(sigManager) {
+    : MessageBase(senderId, MsgCode::PreProcessReply, 0, maxReplyMsgSize_),
+      sigManager_(bftEngine::impl::SigManager::getInstance()) {
   setPreProcessorHistograms(histograms);
   setParams(senderId, clientId, reqOffsetInBatch, reqSeqNum, reqRetryId);
 }

@@ -2,7 +2,7 @@
 //
 // Copyright (c) 2018-2020 VMware, Inc. All Rights Reserved.
 //
-// This product is licensed to you under the Apache 2.0 license (the "License"). You may not use this product except in
+// This product is licensed to you under the Apache 2.0 license (the "License"). You may not use this product except
 // compliance with the Apache 2.0 License.
 //
 // This product may include a number of subcomponents with separate copyright notices and license terms. Your use of
@@ -32,11 +32,9 @@ TEST(ReplicaAsksToLeaveViewMsg, base_methods) {
   const char rawSpanContext[] = {"span_\0context"};
   const std::string spanContext{rawSpanContext, sizeof(rawSpanContext)};
   ReplicasInfo replicaInfo(config, true, true);
-  SigManager sigManager(config.replicaId,
-                        config.numReplicas + config.numOfClientProxies,
-                        config.replicaPrivateKey,
-                        config.publicKeysOfReplicas);
-  ViewsManager manager(&replicaInfo, &sigManager, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
+  std::unique_ptr<SigManager> sigManager(
+      createSigManager(config.replicaId, config.replicaPrivateKey, config.publicKeysOfReplicas));
+  ViewsManager manager(&replicaInfo, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
   std::unique_ptr<ReplicaAsksToLeaveViewMsg> msg(
       ReplicaAsksToLeaveViewMsg::create(senderId,
                                         viewNum,

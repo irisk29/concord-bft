@@ -55,20 +55,36 @@ namespace {
 
 ReplicaLoader::ErrorCode loadConfig(shared_ptr<PersistentStorage> &p, LoadedReplicaData &ld) {
   ConcordAssert(p != nullptr);
+  std::vector<SigManager::Key> publickeys;
+  std::map<PrincipalId, SigManager::KeyIndex> publicKeysMapping;
+  size_t lowBound, highBound;
 
-  std::set<SigManager::PublicKeyDesc> replicasSigPublicKeys;
-
+  SigManager::KeyIndex i{0};
+  highBound = ld.repConfig.numRoReplicas + ld.repConfig.numReplicas - 1;
   for (const auto &e : ld.repConfig.publicKeysOfReplicas) {
-    SigManager::PublicKeyDesc keyDesc = {e.first, e.second};
-    replicasSigPublicKeys.insert(keyDesc);
+    // each replica sign with a unique private key (1 to 1 relation)
+    ConcordAssert(e.first <= highBound);
+    publickeys.push_back(e.second);
+    publicKeysMapping.insert({e.first, i++});
   }
 
-  uint16_t numOfReplicas = (uint16_t)(3 * ld.repConfig.fVal + 2 * ld.repConfig.cVal + 1);
+  if (ld.repConfig.clientTransactionSigningEnabled) {
+    // Multiple clients might be signing with the same private key (1 to many relation)
+    lowBound = ld.repConfig.numRoReplicas + ld.repConfig.numReplicas + ld.repConfig.numOfClientProxies;
+    highBound = lowBound + ld.repConfig.numOfExternalClients - 1;
+    for (const auto &pair_ : ld.repConfig.publicKeysOfClients) {
+      ConcordAssert(!pair_.first.empty());
+      publickeys.push_back(pair_.first);
+      for (const auto e : pair_.second) {
+        ConcordAssert((e >= lowBound) && (e <= highBound));
+        publicKeysMapping.insert({e, i});
+      }
+      ++i;
+    }
+  }
 
-  ld.sigManager = new SigManager(ld.repConfig.replicaId,
-                                 numOfReplicas + ld.repConfig.numOfClientProxies + ld.repConfig.numOfExternalClients,
-                                 ld.repConfig.replicaPrivateKey,
-                                 replicasSigPublicKeys);
+  ld.sigManager =
+      SigManager::init(ld.repConfig.replicaId, ld.repConfig.replicaPrivateKey, publickeys, publicKeysMapping);
 
   ld.repsInfo = new ReplicasInfo(ld.repConfig, dynamicCollectorForPartialProofs, dynamicCollectorForExecutionProofs);
 
@@ -118,8 +134,8 @@ ReplicaLoader::ErrorCode loadViewInfo(shared_ptr<PersistentStorage> &p, LoadedRe
 
   ViewsManager *viewsManager = nullptr;
   if (!hasDescLastExitFromView && !hasDescOfLastNewView) {
-    viewsManager = ViewsManager::createInsideViewZero(
-        ld.repsInfo, ld.sigManager, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
+    viewsManager =
+        ViewsManager::createInsideViewZero(ld.repsInfo, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
 
     ConcordAssert(viewsManager->latestActiveView() == 0);
     ConcordAssert(viewsManager->viewIsActive(0));
@@ -129,7 +145,6 @@ ReplicaLoader::ErrorCode loadViewInfo(shared_ptr<PersistentStorage> &p, LoadedRe
     Verify((descriptorOfLastExitFromView.view == 0), InconsistentErr);
 
     viewsManager = ViewsManager::createOutsideView(ld.repsInfo,
-                                                   ld.sigManager,
                                                    CryptoManager::instance().thresholdVerifierForSlowPathCommit(),
                                                    descriptorOfLastExitFromView.view,
                                                    descriptorOfLastExitFromView.lastStable,
@@ -147,7 +162,6 @@ ReplicaLoader::ErrorCode loadViewInfo(shared_ptr<PersistentStorage> &p, LoadedRe
     Verify((descriptorOfLastExitFromView.view >= 1), InconsistentErr);
 
     viewsManager = ViewsManager::createOutsideView(ld.repsInfo,
-                                                   ld.sigManager,
                                                    CryptoManager::instance().thresholdVerifierForSlowPathCommit(),
                                                    descriptorOfLastExitFromView.view,
                                                    descriptorOfLastExitFromView.lastStable,
@@ -166,7 +180,6 @@ ReplicaLoader::ErrorCode loadViewInfo(shared_ptr<PersistentStorage> &p, LoadedRe
     Verify((descriptorOfLastNewView.view >= 1), InconsistentErr);
 
     viewsManager = ViewsManager::createInsideView(ld.repsInfo,
-                                                  ld.sigManager,
                                                   CryptoManager::instance().thresholdVerifierForSlowPathCommit(),
                                                   descriptorOfLastNewView.view,
                                                   descriptorOfLastNewView.stableLowerBoundWhenEnteredToView,

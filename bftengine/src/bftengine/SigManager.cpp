@@ -16,37 +16,50 @@
 namespace bftEngine {
 namespace impl {
 
-SigManager::SigManager(ReplicaId myId,
-                       int16_t numberOfReplicasAndClients,
-                       const PrivateKeyDesc& mySigPrivateKey,
-                       const std::set<PublicKeyDesc>& replicasSigPublicKeys)
-    : myId_{myId} {
-  // ConcordAssert(replicasSigPublicKeys.size() == numberOfReplicasAndClients); TODO(GG): change - here we don't care
-  // about client signatures
+SigManager* SigManager::instance_{nullptr};
 
+SigManager::SigManager(PrincipalId myId,
+                       const Key& mySigPrivateKey,
+                       const std::vector<Key>& publickeys,
+                       const std::map<PrincipalId, KeyIndex>& publicKeysMapping)
+    : myId_(myId) {
+  std::map<KeyIndex, RSAVerifier*> publicKeyToVerifier;
   mySigner_ = new RSASigner(mySigPrivateKey.c_str());
+  size_t numPublickeys = publickeys.size();
+  ConcordAssert(publicKeysMapping.size() >= numPublickeys);
+  ConcordAssert(numPublickeys > 0);
 
-  for (const PublicKeyDesc& p : replicasSigPublicKeys) {
-    ConcordAssert(replicasVerifiers_.count(p.first) == 0);
+  for (const auto& p : publicKeysMapping) {
+    ConcordAssert(verifiers_.count(p.first) == 0);
+    LOG_INFO(GL, KVLOG(p.second));
+    LOG_INFO(GL, KVLOG(numPublickeys));
+    ConcordAssert(p.second < numPublickeys);
 
-    RSAVerifier* verifier = new RSAVerifier(p.second.c_str());
-    replicasVerifiers_[p.first] = verifier;
+    auto iter = publicKeyToVerifier.find(p.second);
+    if (iter == publicKeyToVerifier.end()) {
+      verifiers_[p.first] = new RSAVerifier(publickeys[p.second].c_str());
+      publicKeyToVerifier[p.second] = verifiers_[p.first];
+    } else
+      verifiers_[p.first] = iter->second;
 
-    ConcordAssert(p.first != myId || mySigner_->signatureLength() == verifier->signatureLength());
+    ConcordAssert(p.first != myId);
   }
 }
 
 SigManager::~SigManager() {
-  delete mySigner_;
-  for (std::pair<ReplicaId, RSAVerifier*> v : replicasVerifiers_) delete v.second;
+  if (instance_) {
+    delete mySigner_;
+    for (std::pair<ReplicaId, RSAVerifier*> v : verifiers_) delete v.second;
+    instance_ = nullptr;
+  }
 }
 
 uint16_t SigManager::getSigLength(ReplicaId replicaId) const {
   if (replicaId == myId_) {
     return (uint16_t)mySigner_->signatureLength();
   } else {
-    auto pos = replicasVerifiers_.find(replicaId);
-    ConcordAssert(pos != replicasVerifiers_.end());
+    auto pos = verifiers_.find(replicaId);
+    ConcordAssert(pos != verifiers_.end());
 
     RSAVerifier* verifier = pos->second;
 
@@ -56,8 +69,8 @@ uint16_t SigManager::getSigLength(ReplicaId replicaId) const {
 
 bool SigManager::verifySig(
     ReplicaId replicaId, const char* data, size_t dataLength, const char* sig, uint16_t sigLength) const {
-  auto pos = replicasVerifiers_.find(replicaId);
-  ConcordAssert(pos != replicasVerifiers_.end());
+  auto pos = verifiers_.find(replicaId);
+  ConcordAssert(pos != verifiers_.end());
 
   RSAVerifier* verifier = pos->second;
 

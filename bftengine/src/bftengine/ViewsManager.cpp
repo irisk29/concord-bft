@@ -28,8 +28,6 @@
 namespace bftEngine {
 namespace impl {
 
-SigManager* ViewsManager::sigManager_ = nullptr;
-
 bool ViewsManager::PrevViewInfo::equals(const PrevViewInfo& other) const {
   if (other.hasAllRequests != hasAllRequests) return false;
   if ((other.prePrepare && !prePrepare) || (!other.prePrepare && prePrepare)) return false;
@@ -44,11 +42,9 @@ uint32_t ViewsManager::PrevViewInfo::maxSize() {
          sizeof(hasAllRequests);
 }
 
-ViewsManager::ViewsManager(const ReplicasInfo* const r,
-                           SigManager* sigmgr,
-                           std::shared_ptr<IThresholdVerifier> preparedCertificateVerifier)
+ViewsManager::ViewsManager(const ReplicasInfo* const r, std::shared_ptr<IThresholdVerifier> preparedCertificateVerifier)
     : replicasInfo(r), N(r->numberOfReplicas()), F(r->fVal()), C(r->cVal()), myId(r->myId()) {
-  sigManager_ = sigmgr;
+  sigManager_ = SigManager::getInstance();
   ConcordAssert(preparedCertificateVerifier != nullptr);
   ConcordAssert(N == (3 * F + 2 * C + 1));
 
@@ -116,7 +112,6 @@ ViewsManager::~ViewsManager() {
 }
 
 ViewsManager* ViewsManager::createOutsideView(const ReplicasInfo* const r,
-                                              SigManager* sigMgr,
                                               std::shared_ptr<IThresholdVerifier> preparedCertificateVerifier,
                                               ViewNum lastActiveView,
                                               SeqNum lastStable,
@@ -147,7 +142,7 @@ ViewsManager* ViewsManager::createOutsideView(const ReplicasInfo* const r,
     ConcordAssert(pvi.prepareFull == nullptr || pvi.prepareFull->seqNumber() == pvi.prePrepare->seqNumber());
   }
 
-  ViewsManager* v = new ViewsManager(r, sigMgr, preparedCertificateVerifier);
+  ViewsManager* v = new ViewsManager(r, preparedCertificateVerifier);
   ConcordAssert(v->stat == Stat::IN_VIEW);
   ConcordAssert(v->myLatestActiveView == 0);
 
@@ -176,14 +171,12 @@ ViewsManager* ViewsManager::createOutsideView(const ReplicasInfo* const r,
 }
 
 ViewsManager* ViewsManager::createInsideViewZero(const ReplicasInfo* const r,
-                                                 SigManager* sigMgr,
                                                  std::shared_ptr<IThresholdVerifier> preparedCertificateVerifier) {
-  ViewsManager* v = new ViewsManager(r, sigMgr, preparedCertificateVerifier);
+  ViewsManager* v = new ViewsManager(r, preparedCertificateVerifier);
   return v;
 }
 
 ViewsManager* ViewsManager::createInsideView(const ReplicasInfo* const r,
-                                             SigManager* sigMgr,
                                              std::shared_ptr<IThresholdVerifier> preparedCertificateVerifier,
                                              ViewNum view,
                                              SeqNum stableLowerBound,
@@ -216,7 +209,7 @@ ViewsManager* ViewsManager::createInsideView(const ReplicasInfo* const r,
     ConcordAssert(newViewMsg->includesViewChangeFromReplica(r->myId(), msgDigest) == false);
   }
 
-  ViewsManager* v = new ViewsManager(r, sigMgr, preparedCertificateVerifier);
+  ViewsManager* v = new ViewsManager(r, preparedCertificateVerifier);
 
   ConcordAssert(v->stat == Stat::IN_VIEW);
   v->myLatestActiveView = view;

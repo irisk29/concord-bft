@@ -11,11 +11,20 @@
 
 #pragma once
 #include "PrimitiveTypes.hpp"
+#include "assertUtils.hpp"
 
 #include <utility>
-#include <set>
+#include <vector>
 #include <map>
+#include <string>
 #include <memory>
+
+// createSigManager should be used only for test purpose!
+// namespace bftEngine::impl {
+// class SigManager;
+// }
+// bftEngine::impl::SigManager* createSigManager(size_t, std::string&, std::set<std::pair<uint16_t, const
+// std::string>>&);
 
 namespace bftEngine {
 namespace impl {
@@ -25,29 +34,51 @@ class RSAVerifier;
 
 class SigManager {
  public:
-  typedef std::pair<ReplicaId, const std::string> PublicKeyDesc;
-  typedef std::string PrivateKeyDesc;
+  typedef std::string Key;
+  typedef uint16_t KeyIndex;
 
-  SigManager(ReplicaId myId,
-             int16_t numberOfReplicasAndClients,
-             const PrivateKeyDesc& mySigPrivateKey,
-             const std::set<PublicKeyDesc>& replicasSigPublicKeys);
+  // use this function only for testing (Testing is a namespace)!
+  // friend SigManager* ::createSigManager(size_t, std::string&, std::set<std::pair<uint16_t, const std::string>>&);
+
+  static SigManager* getInstance() {
+    ConcordAssertNE(instance_, nullptr);
+    return instance_;
+  }
+
+  static SigManager* init(PrincipalId myId,
+                          const Key& mySigPrivateKey,
+                          const std::vector<Key>& publickeys,
+                          const std::map<PrincipalId, KeyIndex>& publicKeysMapping) {
+    ConcordAssertEQ(instance_, nullptr);
+    instance_ = new SigManager(myId, mySigPrivateKey, publickeys, publicKeysMapping);
+    return instance_;
+  }
 
   ~SigManager();
 
-  uint16_t getSigLength(ReplicaId replicaId) const;
-  bool verifySig(ReplicaId replicaId, const char* data, size_t dataLength, const char* sig, uint16_t sigLength) const;
-
+  uint16_t getSigLength(PrincipalId replicaId) const;
+  bool verifySig(PrincipalId replicaId, const char* data, size_t dataLength, const char* sig, uint16_t sigLength) const;
   void sign(const char* data, size_t dataLength, char* outSig, uint16_t outSigLength) const;
   uint16_t getMySigLength() const;
 
- protected:
-  const ReplicaId myId_;
-  RSASigner* mySigner_;
-  std::map<ReplicaId, RSAVerifier*> replicasVerifiers_;
-};
+  SigManager(const SigManager&) = delete;
+  SigManager& operator=(const SigManager&) = delete;
+  SigManager(SigManager&&) = delete;
+  SigManager& operator=(SigManager&&) = delete;
 
-typedef std::shared_ptr<SigManager> SigManagerSharedPtr;
+ protected:
+  static SigManager* instance;
+  const PrincipalId myId_;
+  RSASigner* mySigner_;
+  std::map<PrincipalId, RSAVerifier*> verifiers_;
+
+  SigManager(PrincipalId myId,
+             const Key& mySigPrivateKey,
+             const std::vector<Key>& publickeys,
+             const std::map<PrincipalId, KeyIndex>& publicKeysMapping);
+
+  static SigManager* instance_;
+};
 
 }  // namespace impl
 }  // namespace bftEngine

@@ -2,8 +2,8 @@
 //
 // Copyright (c) 2018-2020 VMware, Inc. All Rights Reserved.
 //
-// This product is licensed to you under the Apache 2.0 license (the "License"). You may not use this product except in
-// compliance with the Apache 2.0 License.
+// This product is licensed to you under the Apache 2.0 license (the "License"). You may not use this product except
+// in compliance with the Apache 2.0 License.
 //
 // This product may include a number of subcomponents with separate copyright notices and license terms. Your use of
 // these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE
@@ -11,7 +11,6 @@
 
 #include "gtest/gtest.h"
 
-#include <tuple>
 #include "helper.hpp"
 #include "DigestType.h"
 #include "ViewsManager.hpp"
@@ -21,6 +20,9 @@
 #include "messages/ViewChangeMsg.hpp"
 #include "bftengine/ClientMsgs.hpp"
 #include "bftengine/ReplicaConfig.hpp"
+
+#include <tuple>
+#include <memory>
 
 using namespace bftEngine;
 using namespace bftEngine::impl;
@@ -33,11 +35,9 @@ void ViewChangeMsgTests(bool bAddElements, bool bAddComplaints, const std::strin
   ViewNum viewNum = 2u;
   SeqNum seqNum = 3u;
   ReplicasInfo replicaInfo(config, true, true);
-  SigManager sigManager(config.replicaId,
-                        config.numReplicas + config.numOfClientProxies,
-                        config.replicaPrivateKey,
-                        config.publicKeysOfReplicas);
-  ViewsManager manager(&replicaInfo, &sigManager, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
+  std::unique_ptr<SigManager> sigManager(
+      createSigManager(config.replicaId, config.replicaPrivateKey, config.publicKeysOfReplicas));
+  ViewsManager manager(&replicaInfo, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
   ViewChangeMsg msg(senderId, viewNum, seqNum, concordUtils::SpanContext{spanContext});
   EXPECT_EQ(msg.idOfGeneratedReplica(), senderId);
   EXPECT_EQ(msg.newView(), viewNum);
@@ -174,11 +174,9 @@ void ViewChangeMsgAddRemoveComplaints(const std::string& spanContext = "", int t
   ViewNum viewNum = 2u;
   SeqNum seqNum = 3u;
   ReplicasInfo replicaInfo(config, true, true);
-  SigManager sigManager(config.replicaId,
-                        config.numReplicas + config.numOfClientProxies,
-                        config.replicaPrivateKey,
-                        config.publicKeysOfReplicas);
-  ViewsManager manager(&replicaInfo, &sigManager, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
+  std::unique_ptr<SigManager> sigManager(
+      createSigManager(config.replicaId, config.replicaPrivateKey, config.publicKeysOfReplicas));
+  ViewsManager manager(&replicaInfo, CryptoManager::instance().thresholdVerifierForSlowPathCommit());
   ViewChangeMsg msg(senderId, viewNum, seqNum, concordUtils::SpanContext{spanContext});
   EXPECT_EQ(msg.idOfGeneratedReplica(), senderId);
   EXPECT_EQ(msg.newView(), viewNum);

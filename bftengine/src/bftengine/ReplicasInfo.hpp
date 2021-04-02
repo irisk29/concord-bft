@@ -13,6 +13,8 @@
 #include "PrimitiveTypes.hpp"
 #include "SigManager.hpp"
 
+#include <set>
+
 namespace bftEngine {
 
 class ReplicaConfig;

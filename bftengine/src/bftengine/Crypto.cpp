@@ -210,9 +210,15 @@ bool RSASigner::sign(const char* inBuffer,
   return impl->sign(inBuffer, lengthOfInBuffer, outBuffer, lengthOfOutBuffer, lengthOfReturnedData);
 }
 
-RSAVerifier::RSAVerifier(const char* publicKey) {
+RSAVerifier::RSAVerifier(const char* publicKey, bool removeHeaderTrailer) {
   StringSource s(publicKey, true, new HexDecoder);
-  impl = std::make_unique<Impl>(s);
+  if (removeHeaderTrailer) {
+    RSA::PublicKey pub_key;
+    PEM_Load(s, pub_key);
+    impl = std::make_unique<Impl>(pub_key);
+  } else {
+    impl = std::make_unique<Impl>(s);
+  }
 }
 
 RSAVerifier::RSAVerifier(const string& publicKeyPath) {

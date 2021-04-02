@@ -60,7 +60,7 @@ class RSASigner {
 class RSAVerifier {
  public:
   RSAVerifier(const char* publicKey, const char* randomSeed);
-  explicit RSAVerifier(const char* publicKey);
+  explicit RSAVerifier(const char* publicKey, bool removeHeaderTrailer = false);
   explicit RSAVerifier(const string& publicKeyPath);
   RSAVerifier(const RSAVerifier&) = delete;
   RSAVerifier(RSAVerifier&&);

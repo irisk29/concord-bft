@@ -170,7 +170,7 @@ class PreProcessor {
  private:
   static std::vector<std::shared_ptr<PreProcessor>> preProcessors_;  // The place holder for PreProcessor objects
 
-  bftEngine::impl::SigManagerSharedPtr sigManager_;
+  bftEngine::impl::SigManager *sigManager_;
   std::shared_ptr<MsgsCommunicator> msgsCommunicator_;
   std::shared_ptr<IncomingMsgsStorage> incomingMsgsStorage_;
   std::shared_ptr<MsgHandlersRegistrator> msgHandlersRegistrator_;

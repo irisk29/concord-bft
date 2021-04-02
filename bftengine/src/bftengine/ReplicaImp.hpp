@@ -305,7 +305,6 @@ class ReplicaImp : public InternalReplicaApi, public ReplicaForStateTransfer {
              const ReplicaConfig&,
              shared_ptr<IRequestsHandler>,
              IStateTransfer*,
-             SigManager*,
              ReplicasInfo*,
              ViewsManager*,
              shared_ptr<MsgsCommunicator>,
