@@ -106,7 +106,6 @@ PreProcessor::PreProcessor(shared_ptr<MsgsCommunicator> &msgsCommunicator,
   registerMsgHandlers();
   metricsComponent_.Register();
   const uint16_t numOfExternalClients = myReplica.getReplicaConfig().numOfExternalClients;
-  sigManager_ = SigManager::getInstance();
   const uint16_t numOfReqEntries = numOfExternalClients * clientMaxBatchSize_;
   const uint16_t firstClientRequestId = (numOfReplicas_ + numOfInternalClients_) * clientMaxBatchSize_;
   for (uint16_t i = 0; i < numOfReqEntries; i++) {

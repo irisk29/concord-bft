@@ -53,19 +53,21 @@ namespace impl {
 // most code of ReplicaLoader is encapsulated in this file
 namespace {
 
-ReplicaLoader::ErrorCode loadConfig(shared_ptr<PersistentStorage> &p, LoadedReplicaData &ld) {
-  ConcordAssert(p != nullptr);
+ReplicaLoader::ErrorCode loadConfig(LoadedReplicaData &ld) {
   std::vector<SigManager::Key> publickeys;
   std::map<PrincipalId, SigManager::KeyIndex> publicKeysMapping;
   size_t lowBound, highBound;
 
   SigManager::KeyIndex i{0};
   highBound = ld.repConfig.numRoReplicas + ld.repConfig.numReplicas - 1;
-  for (const auto &e : ld.repConfig.publicKeysOfReplicas) {
+  for (const auto &repIdToKeyPair : ld.repConfig.publicKeysOfReplicas) {
     // each replica sign with a unique private key (1 to 1 relation)
-    ConcordAssert(e.first <= highBound);
-    publickeys.push_back(e.second);
-    publicKeysMapping.insert({e.first, i++});
+    ConcordAssert(repIdToKeyPair.first <= highBound);
+    if (ld.repConfig.replicaId == repIdToKeyPair.first)
+      // don't insert my own public key
+      continue;
+    publickeys.push_back(repIdToKeyPair.second);
+    publicKeysMapping.insert({repIdToKeyPair.first, i++});
   }
 
   if (ld.repConfig.clientTransactionSigningEnabled) {
@@ -205,7 +207,7 @@ ReplicaLoader::ErrorCode loadViewInfo(shared_ptr<PersistentStorage> &p, LoadedRe
 ReplicaLoader::ErrorCode loadReplicaData(shared_ptr<PersistentStorage> p, LoadedReplicaData &ld) {
   ConcordAssert(p != nullptr);
 
-  ReplicaLoader::ErrorCode stat = loadConfig(p, ld);
+  ReplicaLoader::ErrorCode stat = loadConfig(ld);
 
   Verify((stat == Succ), stat);
 

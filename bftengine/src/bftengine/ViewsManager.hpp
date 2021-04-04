@@ -152,7 +152,6 @@ class ViewsManager {
   ///////////////////////////////////////////////////////////////////////////
 
   const ReplicasInfo *const replicasInfo;
-  SigManager *sigManager_;
 
   const uint16_t N;  // number of replicas
   const uint16_t F;  // f

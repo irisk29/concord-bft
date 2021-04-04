@@ -3485,7 +3485,6 @@ ReplicaImp::ReplicaImp(bool firstTime,
       viewChangeProtocolEnabled{config.viewChangeProtocolEnabled},
       autoPrimaryRotationEnabled{config.autoPrimaryRotationEnabled},
       restarted_{!firstTime},
-      sigManager{SigManager::getInstance()},
       replyBuffer{(char *)std::malloc(config_.getmaxReplyMessageSize() - sizeof(ClientReplyMsgHeader))},
       timeOfLastStateSynch{getMonotonicTime()},    // TODO(GG): TBD
       timeOfLastViewEntrance{getMonotonicTime()},  // TODO(GG): TBD
@@ -3663,7 +3662,6 @@ ReplicaImp::~ReplicaImp() {
   delete dynamicUpperLimitOfRounds;
   delete checkpointsLog;
   delete clientsManager;
-  delete sigManager;
   delete repsInfo;
   free(replyBuffer);
 

@@ -44,7 +44,6 @@ uint32_t ViewsManager::PrevViewInfo::maxSize() {
 
 ViewsManager::ViewsManager(const ReplicasInfo* const r, std::shared_ptr<IThresholdVerifier> preparedCertificateVerifier)
     : replicasInfo(r), N(r->numberOfReplicas()), F(r->fVal()), C(r->cVal()), myId(r->myId()) {
-  sigManager_ = SigManager::getInstance();
   ConcordAssert(preparedCertificateVerifier != nullptr);
   ConcordAssert(N == (3 * F + 2 * C + 1));
 
