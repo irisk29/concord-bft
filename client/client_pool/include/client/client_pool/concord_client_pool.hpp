@@ -43,8 +43,11 @@ using TextMap = std::unordered_map<std::string, std::string>;
 // request
 enum SubmitResult {
   Acknowledged,  // The request has been queued for submission
-  Overloaded,    // There is no available client to the moment to process the
-  // request
+  Overloaded,    // There is no available client to the moment to process the request
+  Timeout,       // if the request couldn't be processed before the given timeout expired.
+  Unavailable,   // if Concord Client is currently unable to process any requests. The caller should retry with a
+                 // backoff.
+  Internal,      // if Concord Client cannot progress independent of the request.
 };
 
 // Request callback, will return SubmitResult::overloaded when no clients available

@@ -399,7 +399,9 @@ void SingleRequestProcessingJob::execute() {
     read_config_.request.correlation_id = correlation_id_;
     read_config_.request.span_context = span_context_;
     res = processing_client_->SendRequest(read_config_, std::move(request_));
-    if (callback_) callback_(res);
+    if (callback_) {
+      res.matched_data.empty() ? callback_(SubmitResult::Timeout) : callback_(res);
+    }
     reply_size = res.matched_data.size();
   } else {
     write_config_.request.timeout = timeout_ms_;
@@ -408,7 +410,9 @@ void SingleRequestProcessingJob::execute() {
     write_config_.request.span_context = span_context_;
     write_config_.request.pre_execute = flags_ & PRE_PROCESS_REQ;
     res = processing_client_->SendRequest(write_config_, std::move(request_));
-    if (callback_) callback_(res);
+    if (callback_) {
+      res.matched_data.empty() ? callback_(SubmitResult::Timeout) : callback_(res);
+    }
     reply_size = res.matched_data.size();
   }
   external_client::ConcordClient::PendingReplies replies;

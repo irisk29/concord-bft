@@ -47,7 +47,7 @@ enum ClientMsgFlag : uint8_t {
 };
 
 enum OperationResult : int8_t { SUCCESS, NOT_READY, TIMEOUT, BUFFER_TOO_SMALL, INVALID_REQUEST };
-typedef std::function<void(bft::client::Reply&&)> RequestCallBack;
+typedef std::function<void(std::variant<uint8_t, bft::client::Reply>&&)> RequestCallBack;
 
 struct ClientRequest {
   uint8_t flags = 0;
