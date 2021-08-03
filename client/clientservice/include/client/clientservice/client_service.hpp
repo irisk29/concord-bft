@@ -25,7 +25,12 @@ class ClientService {
       : logger_(logging::getLogger("concord.client.clientservice")),
         client_(std::move(client)),
         event_service_(std::make_unique<EventServiceImpl>(client_)),
-        request_service_(std::make_unique<RequestServiceImpl>(client_)){};
+        request_service_(std::make_unique<RequestServiceImpl>(client_)) {
+    LOG_DEBUG(KEY_EX_LOG, "iris1");
+    LOG_INFO(KEY_EX_LOG, "iris2");
+    LOG_WARN(KEY_EX_LOG, "iris3");
+    LOG_CONFIGURE_AND_WATCH("/clientservice/config-public/log4cplus.properties", 6000);
+  };
 
   void start(const std::string& addr);
 
