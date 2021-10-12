@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
 
   ConcordClientConfig config;
   try {
+    LOG_ERROR(KEY_EX_LOG, opts["config"].as<std::string>());
     auto yaml = YAML::LoadFile(opts["config"].as<std::string>());
     parseConfigFile(config, yaml);
     configureSubscription(
