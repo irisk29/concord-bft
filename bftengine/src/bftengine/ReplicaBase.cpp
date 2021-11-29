@@ -32,6 +32,7 @@ ReplicaBase::ReplicaBase(const ReplicaConfig& config,
       last_metrics_dump_time_(0),
       metrics_dump_interval_in_sec_(config_.metricsDumpIntervalSeconds),
       metrics_{concordMetrics::Component("replica", std::make_shared<concordMetrics::Aggregator>())},
+      connected_external_client{metrics_.RegisterGauge("number_of_external_clients_connected_to_replica", 0)},
       timers_{timers} {
   LOG_INFO(GL, "");
   if (config_.debugStatisticsEnabled) DebugStatistics::initDebugStatisticsData();
@@ -52,7 +53,20 @@ void ReplicaBase::start() {
       LOG_DEBUG(GL, "-- ReplicaBase metrics dump--" + metrics_.ToJson());
     }
   });
-  msgsCommunicator_->startCommunication(config_.replicaId);
+
+  const std::function<void(void)> callback = std::bind(&ReplicaBase::updateMetricOfConnectedExternalClients, this);
+  msgsCommunicator_->startCommunication(config_.replicaId, callback);
+}
+
+void ReplicaBase::updateMetricOfConnectedExternalClients() {
+  auto& external_clients = repsInfo->idsOfExternalClients();
+  uint32_t num_of_connected_external_clients = 0;
+  for (PrincipalId external_client : external_clients) {
+    if (msgsCommunicator_->isReplicaConnected(external_client)) {
+      num_of_connected_external_clients++;
+    }
+  }
+  connected_external_client.Get().Set(num_of_connected_external_clients);
 }
 
 void ReplicaBase::stop() {
@@ -62,7 +76,8 @@ void ReplicaBase::stop() {
     DebugStatistics::freeDebugStatisticsData();
   }
   msgsCommunicator_->stopMsgsProcessing();
-  msgsCommunicator_->stopCommunication();
+  const std::function<void(void)> callback = std::bind(&ReplicaBase::updateMetricOfConnectedExternalClients, this);
+  msgsCommunicator_->stopCommunication(callback);
 }
 
 bool ReplicaBase::isRunning() const { return msgsCommunicator_->isMsgsProcessingRunning(); }

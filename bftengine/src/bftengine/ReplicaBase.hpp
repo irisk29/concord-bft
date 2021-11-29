@@ -71,6 +71,7 @@ class ReplicaBase {
   auto& timers() { return timers_; }
 
  protected:
+  void updateMetricOfConnectedExternalClients();
   // Message handling
   virtual void onReportAboutInvalidMessage(MessageBase* msg, const char* reason) = 0;
 
@@ -110,6 +111,7 @@ class ReplicaBase {
   std::chrono::seconds metrics_dump_interval_in_sec_;
   concordMetrics::Component metrics_;
   std::shared_ptr<concordMetrics::Aggregator> aggregator_;
+  GaugeHandle connected_external_client;
 
   ///////////////////////////////////////////////////
   // Timers

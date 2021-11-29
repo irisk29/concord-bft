@@ -18,6 +18,8 @@
 
 namespace bftEngine::impl {
 
+typedef std::function<void(void)> count_connected_external_client_callback;
+
 class MsgsCommunicator {
  public:
   explicit MsgsCommunicator(bft::communication::ICommunication* comm,
@@ -25,8 +27,9 @@ class MsgsCommunicator {
                             std::shared_ptr<bft::communication::IReceiver> msgReceiver);
   virtual ~MsgsCommunicator() = default;
 
-  int startCommunication(uint16_t replicaId);
-  int stopCommunication();
+  int startCommunication(uint16_t replicaId,
+                         const bftEngine::impl::count_connected_external_client_callback& callback = {});
+  int stopCommunication(const bftEngine::impl::count_connected_external_client_callback& callback = {});
   void startMsgsProcessing(uint16_t replicaId);
   void stopMsgsProcessing();
   uint32_t numOfConnectedReplicas(uint32_t clusterSize);

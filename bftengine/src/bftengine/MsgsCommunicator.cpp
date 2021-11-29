@@ -23,18 +23,21 @@ MsgsCommunicator::MsgsCommunicator(ICommunication* comm,
                                    shared_ptr<IReceiver> msgReceiver)
     : incomingMsgsStorage_(incomingMsgsStorage), msgReceiver_(msgReceiver), communication_(comm) {}
 
-int MsgsCommunicator::startCommunication(uint16_t replicaId) {
+int MsgsCommunicator::startCommunication(uint16_t replicaId,
+                                         const bftEngine::impl::count_connected_external_client_callback& callback) {
   replicaId_ = replicaId;
   communication_->setReceiver(replicaId_, msgReceiver_.get());
   int commStatus = communication_->start();
   ConcordAssert(commStatus == 0);
   LOG_INFO(GL, "Communication for replica " << replicaId_ << " started");
+  if (callback) callback();
   return commStatus;
 }
 
-int MsgsCommunicator::stopCommunication() {
+int MsgsCommunicator::stopCommunication(const bftEngine::impl::count_connected_external_client_callback& callback) {
   int res = communication_->stop();
   LOG_INFO(GL, "Communication for replica " << replicaId_ << " stopped");
+  if (callback) callback();
   return res;
 }
 
