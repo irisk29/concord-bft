@@ -29,7 +29,7 @@ class MsgsCommunicator {
 
   int startCommunication(uint16_t replicaId,
                          const bftEngine::impl::count_connected_external_client_callback& callback = {});
-  int stopCommunication(const bftEngine::impl::count_connected_external_client_callback& callback = {});
+  int stopCommunication();
   void startMsgsProcessing(uint16_t replicaId);
   void stopMsgsProcessing();
   uint32_t numOfConnectedReplicas(uint32_t clusterSize);
@@ -47,6 +47,8 @@ class MsgsCommunicator {
   std::shared_ptr<IncomingMsgsStorage> incomingMsgsStorage_;
   std::shared_ptr<bft::communication::IReceiver> msgReceiver_;
   bft::communication::ICommunication* communication_;
+  std::thread externalClientsCounterThread;
+  std::atomic_bool stopThread = false;
 };
 
 }  // namespace bftEngine::impl

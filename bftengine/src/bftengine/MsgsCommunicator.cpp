@@ -30,14 +30,23 @@ int MsgsCommunicator::startCommunication(uint16_t replicaId,
   int commStatus = communication_->start();
   ConcordAssert(commStatus == 0);
   LOG_INFO(GL, "Communication for replica " << replicaId_ << " started");
-  if (callback) callback();
+  if (callback) {
+    auto threadFunction = [&callback, this]() {
+      while (!stopThread) {
+        callback();
+        this_thread::sleep_for(chrono::minutes(1));
+      }
+    };
+    externalClientsCounterThread = std::thread(threadFunction);
+    externalClientsCounterThread.detach();
+  }
   return commStatus;
 }
 
-int MsgsCommunicator::stopCommunication(const bftEngine::impl::count_connected_external_client_callback& callback) {
+int MsgsCommunicator::stopCommunication() {
   int res = communication_->stop();
   LOG_INFO(GL, "Communication for replica " << replicaId_ << " stopped");
-  if (callback) callback();
+  stopThread = true;
   return res;
 }
 
